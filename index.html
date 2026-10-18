@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>數和練習場</title>
+<meta name="description" content="給新手的數和（Kakuro）練習網站：三種大小、三種難度，每題都只有一個答案。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9EEF3;
+  --sheet:#FFFFFF;
+  --ink:#1E2A44;
+  --ink-soft:#4A5672;
+  --pen:#2457C5;
+  --run:#DCE7FB;
+  --focus:#FFD866;
+  --bad:#C2410C;
+  --bad-bg:#FDE4D6;
+  --good:#2F7D4F;
+  --good-bg:#E1F2E7;
+  --line:#1E2A44;
+  --clue-text:#FFFFFF;
+  --rule:#C9D2DC;
+  --tri:#3A4B76;
+  --tri-edge:#7486B0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141A26; --sheet:#1E2635; --ink:#0A0F19; --ink-soft:#A9B4C8;
+    --pen:#8FB4FF; --run:#26365A; --focus:#7A6420; --bad:#FF9E6E; --bad-bg:#4A2516;
+    --good:#7FD39F; --good-bg:#1D3A2A; --line:#05080F; --clue-text:#E7ECF5; --rule:#2E3950; --tri:#26324E; --tri-edge:#51638C; color-scheme: dark;
+  }
+  :root:not([data-theme="light"]) body{color:#E7ECF5}
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Lexend","PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif;
+  line-height:1.6;
+}
+.wrap{max-width:1040px; margin:0 auto; padding:24px 16px 56px}
+[hidden]{display:none!important}
+button{font:inherit; color:inherit}
+button:focus-visible,a:focus-visible{outline:3px solid var(--pen); outline-offset:2px}
+
+/* shared top bar on inner pages */
+.topbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px}
+.topbar h1{font-size:1.5rem; margin:0; font-weight:700}
+.back{
+  border:2px solid var(--line); background:var(--sheet); border-radius:8px;
+  padding:6px 14px; min-height:40px; cursor:pointer; font-size:.95rem;
+}
+
+/* ---------- home ---------- */
+.home{min-height:calc(100vh - 80px); display:grid; place-items:center; text-align:center}
+.home-inner{max-width:30em}
+.home h1{font-size:clamp(2.4rem, 8vw, 3.6rem); margin:20px 0 4px; letter-spacing:.06em; font-weight:700}
+.home p{margin:0 auto; color:var(--ink-soft); max-width:24em}
+.home-actions{display:flex; flex-direction:column; gap:12px; margin:32px auto 0; max-width:280px}
+.big{
+  border:2px solid var(--line); border-radius:12px; min-height:56px; font-size:1.15rem;
+  cursor:pointer; background:var(--sheet);
+}
+.big.primary{background:var(--line); color:var(--clue-text)}
+.big:active,.back:active{transform:translateY(1px)}
+
+/* mini example board (home + rules) */
+.mini{display:inline-grid; grid-template-columns:repeat(3,64px); grid-template-rows:repeat(3,64px); gap:2px; background:var(--line); border:3px solid var(--line)}
+.mini > div{position:relative; display:flex; align-items:center; justify-content:center}
+.mini .w{background:var(--sheet); color:var(--pen); font-size:1.8rem; font-weight:500}
+.mini .b{background:var(--ink)}
+.mini .c{background:var(--ink)}
+
+/* ---------- rules ---------- */
+.rules{max-width:44em}
+.rules h2{font-size:1.2rem; margin:28px 0 8px}
+.rules h2:first-of-type{margin-top:0}
+.rules ol{padding-left:1.4em; margin:0}
+.rules li{margin:4px 0}
+.rules p{margin:0 0 8px}
+.rules figure{margin:16px 0 8px; display:flex; gap:20px; align-items:center; flex-wrap:wrap}
+.rules figcaption{color:var(--ink-soft); font-size:.95rem; max-width:22em}
+.rules table{border-collapse:collapse; margin-top:8px; font-variant-numeric:tabular-nums}
+.rules td,.rules th{border:1px solid var(--rule); padding:4px 12px; text-align:left; font-weight:400}
+.rules th{color:var(--ink-soft)}
+.rules .go{margin-top:28px}
+
+/* ---------- select ---------- */
+.select-intro{margin:0 0 16px; color:var(--ink-soft)}
+.matrix{
+  display:grid; grid-template-columns:auto repeat(3, minmax(0,1fr)); gap:8px;
+  max-width:760px;
+}
+.matrix .head{font-weight:500; text-align:center; align-self:end; padding-bottom:2px}
+.matrix .rowhead{font-weight:500; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.slot{background:var(--sheet); border:2px solid var(--line); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px}
+.slot button{
+  border:2px solid var(--line); border-radius:8px; background:var(--sheet); min-height:44px; cursor:pointer;
+  font-size:.95rem; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:4px 4px; line-height:1.25; white-space:nowrap; min-height:52px;
+}
+.slot button:hover{background:var(--run)}
+.slot button.done{background:var(--good-bg); border-color:var(--good); color:var(--good)}
+.slot button .mark{font-size:.75rem}
+.legend{margin:16px 0 0; color:var(--ink-soft); font-size:.9rem}
+@media (min-width:600px){ .slot{flex-direction:row} .slot button{flex:1} }
+
+/* ---------- game ---------- */
+.play{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:28px; align-items:start}
+@media (max-width:820px){
+  .play{grid-template-columns:1fr; gap:12px}
+  aside{gap:12px}
+  .pad{order:1} .actions{order:2}
+  .timer{order:3; font-size:1.3rem; display:flex; align-items:baseline; gap:8px}
+  .timer small{display:inline; margin:0}
+  .helper{order:4}
+  .status{margin-top:8px}
+}
+.board-shell{container-type:inline-size; width:100%; max-width:620px}
+.board{
+  display:grid; grid-template-columns:repeat(var(--n),1fr);
+  border:3px solid var(--line); background:var(--line); gap:2px; aspect-ratio:1;
+  user-select:none; -webkit-user-select:none; touch-action:manipulation;
+}
+.cell{position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center}
+.block{background:var(--ink)}
+.clue{background:var(--ink)}
+.clue svg,.mini .c svg{width:100%; height:100%; display:block}
+.tri polygon{fill:var(--tri); stroke:var(--tri-edge); stroke-width:2.5; stroke-linejoin:round}
+.tri text{fill:var(--clue-text); font-size:28px; font-weight:600; text-anchor:middle; dominant-baseline:central; font-family:"Lexend","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+.tri.on polygon{fill:var(--focus); stroke:var(--focus)}
+.tri.on text{fill:#1E2A44}
+.white{
+  background:var(--sheet); cursor:pointer; border:0; padding:0;
+  color:var(--pen); font-weight:500; font-size:calc(100cqi / var(--n) * .5);
+}
+.white.inrun{background:var(--run)}
+.white.sel{background:var(--focus); color:#1E2A44}
+.white.dup{color:var(--bad)}
+.white:focus-visible{outline:3px solid var(--pen); outline-offset:-3px}
+
+.status{margin:12px 0 0; min-height:1.6em; font-size:1rem}
+.status.ok{color:var(--good); font-weight:500}
+.status.err{color:var(--bad)}
+
+aside{display:flex; flex-direction:column; gap:20px}
+.timer{font-size:2.2rem; font-weight:500; font-variant-numeric:tabular-nums; line-height:1}
+.timer small{display:block; font-size:.85rem; font-weight:400; color:var(--ink-soft); margin-top:6px}
+.pad{display:grid; grid-template-columns:repeat(5,1fr); gap:8px}
+.pad button,.actions button{
+  border:2px solid var(--line); background:var(--sheet);
+  border-radius:8px; min-height:48px; cursor:pointer;
+}
+.pad button{font-size:1.3rem; font-weight:500}
+.pad button.erase{font-size:.95rem}
+.pad button:active,.actions button:active{transform:translateY(1px)}
+.actions{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+.actions button{font-size:.95rem; padding:0 10px}
+.actions .primary{background:var(--line); color:var(--clue-text)}
+
+.helper{background:var(--sheet); border:2px solid var(--rule); border-radius:10px; padding:14px 16px}
+.helper h2{font-size:1rem; margin:0 0 6px}
+.helper p{margin:0; color:var(--ink-soft); font-size:.92rem}
+.helper .runline{margin:8px 0 0; font-size:.95rem; color:inherit}
+.helper .runline b{font-weight:500}
+.helper .combos{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.helper .combos span{border:1px solid var(--rule); border-radius:6px; padding:1px 8px; font-variant-numeric:tabular-nums; font-size:.9rem}
+.helper .combos span.only{border-color:var(--good); color:var(--good); font-weight:500}
+
+dialog{border:2px solid var(--line); border-radius:12px; background:var(--sheet); color:inherit; max-width:22em; padding:20px}
+dialog::backdrop{background:rgba(10,15,25,.45)}
+dialog p{margin:0 0 16px}
+dialog .row{display:flex; gap:8px; justify-content:flex-end}
+dialog button{border:2px solid var(--line); background:var(--sheet); border-radius:8px; padding:6px 14px; cursor:pointer; min-height:40px}
+dialog button.primary{background:var(--line); color:var(--clue-text)}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none!important; animation:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 首頁 -->
+  <main id="view-home" class="home">
+    <div class="home-inner">
+      <div class="mini" aria-hidden="true">
+        <div class="b"></div>
+        <div class="c" data-d="3"></div>
+        <div class="c" data-d="12"></div>
+        <div class="c" data-a="4"></div>
+        <div class="w">1</div>
+        <div class="w">3</div>
+        <div class="c" data-a="11"></div>
+        <div class="w">2</div>
+        <div class="w">9</div>
+      </div>
+      <h1>數和練習場</h1>
+      <p>填入 1 到 9，讓每一段的和等於黑格上的數字。給新手慢慢熟悉的 18 道題目。</p>
+      <div class="home-actions">
+        <button class="big primary" id="go-select">選擇題目</button>
+        <button class="big" id="go-rules">規則說明</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 規則說明 -->
+  <main id="view-rules" hidden>
+    <div class="topbar">
+      <button class="back" data-go="#/">回首頁</button>
+      <h1>規則說明</h1>
+    </div>
+    <section class="rules">
+      <h2>玩法</h2>
+      <ol>
+        <li>在白格填入 1 到 9。</li>
+        <li>黑格裡的三角形像屋頂，蓋在哪一段白格上，裡面的數字就是那一段的和：底邊朝下的三角形，是下面那一欄的和；底邊朝右的三角形，是右邊那一列的和。</li>
+        <li>同一段裡的數字不能重複。</li>
+      </ol>
+      <figure>
+        <div class="mini" aria-hidden="true">
+          <div class="b"></div>
+          <div class="c" data-d="3"></div>
+          <div class="c" data-d="12"></div>
+          <div class="c" data-a="4"></div>
+          <div class="w">1</div>
+          <div class="w">3</div>
+          <div class="c" data-a="11"></div>
+          <div class="w">2</div>
+          <div class="w">9</div>
+        </div>
+        <figcaption>例子：第一列 1 + 3 = 4，第二列 2 + 9 = 11；第一欄 1 + 2 = 3，第二欄 3 + 9 = 12。</figcaption>
+      </figure>
+
+      <h2>從哪裡下手</h2>
+      <p>先找只有一種組合的段落。例如兩格加起來是 3，只能是 1 和 2；兩格是 17，只能是 8 和 9。</p>
+      <p>橫段和直段交叉的格子，答案一定同時出現在兩段的組合裡。遊戲中點一個白格，畫面上的「組合提示」會列出它所在段落的所有組合，綠框的是只有一種組合的段落。</p>
+      <table>
+        <tr><th>格數</th><th>只有一種組合的和</th></tr>
+        <tr><td>2 格</td><td>3、4、16、17</td></tr>
+        <tr><td>3 格</td><td>6、7、23、24</td></tr>
+        <tr><td>4 格</td><td>10、11、29、30</td></tr>
+        <tr><td>5 格</td><td>15、16、34、35</td></tr>
+      </table>
+
+      <h2>操作方式</h2>
+      <ol>
+        <li>點白格選取，再用鍵盤或畫面上的數字鍵輸入；方向鍵可以移動。</li>
+        <li>同一段填了重複的數字，會立刻變成橘色。</li>
+        <li>全部格子都填對時，會自動顯示完成。填錯的地方不會提示，要自己找出來。</li>
+        <li>進度會自動存在這台裝置的瀏覽器裡，下次打開可以接著玩。</li>
+      </ol>
+      <div class="go"><button class="big primary" data-go="#/select" style="padding:0 28px">選擇題目</button></div>
+    </section>
+  </main>
+
+  <!-- 選擇題目 -->
+  <main id="view-select" hidden>
+    <div class="topbar">
+      <button class="back" data-go="#/">回首頁</button>
+      <h1>選擇題目</h1>
+    </div>
+    <p class="select-intro">橫向是難度，直向是盤面大小，每一格有兩題。</p>
+    <div class="matrix" id="matrix"></div>
+    <p class="legend">綠色是已完成的題目。</p>
+  </main>
+
+  <!-- 遊戲 -->
+  <main id="view-game" hidden>
+    <div class="topbar">
+      <button class="back" data-go="#/select">回選擇題目</button>
+      <h1 id="game-title"></h1>
+    </div>
+    <div class="play">
+      <div>
+        <div class="board-shell"><div class="board" id="board" aria-label="數和盤面"></div></div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </div>
+      <aside>
+        <div class="timer" id="timer">0:00<small>已用時間</small></div>
+        <div class="pad" id="pad" aria-label="數字鍵"></div>
+        <div class="actions">
+          <button id="btn-clear">全部清除</button>
+          <button id="btn-next">下一題</button>
+        </div>
+        <div class="helper" id="helper"></div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<dialog id="confirm">
+  <p id="confirm-text"></p>
+  <div class="row"><button id="confirm-no">取消</button><button class="primary" id="confirm-yes">確定</button></div>
+</dialog>
+
+<script>
+const PUZZLES = {"6":{"1":[{"size":6,"solution":[[0,0,0,0,0,0],[0,9,7,0,0,0],[0,2,1,3,0,0],[0,0,2,1,6,0],[0,0,0,2,9,1],[0,0,0,0,8,2]],"clues":{"1,0":{"A":16},"2,0":{"A":6},"3,1":{"A":9},"4,2":{"A":12},"5,3":{"A":10},"0,1":{"D":11},"0,2":{"D":10},"1,3":{"D":6},"2,4":{"D":23},"3,5":{"D":3}}},{"size":6,"solution":[[0,0,0,0,0,0],[0,0,0,0,9,2],[0,0,0,9,8,1],[0,0,1,8,2,0],[0,9,8,7,0,0],[0,7,9,0,0,0]],"clues":{"1,3":{"A":11,"D":24},"2,2":{"A":18,"D":18},"3,1":{"A":11,"D":16},"4,0":{"A":24},"5,0":{"A":16},"0,4":{"D":19},"0,5":{"D":3}}}],"2":[{"size":6,"solution":[[0,0,0,0,0,0],[0,3,1,0,7,9],[0,9,4,8,2,7],[0,0,3,9,4,0],[0,8,2,5,1,7],[0,9,8,0,8,9]],"clues":{"1,0":{"A":4},"1,3":{"A":16,"D":22},"2,0":{"A":30},"3,1":{"A":16,"D":17},"4,0":{"A":23},"5,0":{"A":17},"5,3":{"A":17},"0,1":{"D":12},"0,2":{"D":18},"0,4":{"D":22},"0,5":{"D":16},"3,5":{"D":16}}},{"size":6,"solution":[[0,0,0,0,0,0],[0,1,2,0,9,8],[0,3,9,2,8,1],[0,0,4,1,2,0],[0,4,1,3,6,2],[0,7,6,0,3,1]],"clues":{"1,0":{"A":3},"1,3":{"A":17,"D":6},"2,0":{"A":23},"3,1":{"A":7,"D":11},"4,0":{"A":16},"5,0":{"A":13},"5,3":{"A":4},"0,1":{"D":4},"0,2":{"D":22},"0,4":{"D":28},"0,5":{"D":9},"3,5":{"D":3}}}],"3":[{"size":6,"solution":[[0,0,0,0,0,0],[0,1,2,0,5,8],[0,5,1,2,3,9],[0,0,3,1,4,0],[0,3,6,8,2,1],[0,1,5,0,1,3]],"clues":{"1,0":{"A":3},"1,3":{"A":13,"D":11},"2,0":{"A":20},"3,1":{"A":8,"D":4},"4,0":{"A":20},"5,0":{"A":6},"5,3":{"A":4},"0,1":{"D":6},"0,2":{"D":17},"0,4":{"D":15},"0,5":{"D":17},"3,5":{"D":4}}},{"size":6,"solution":[[0,0,0,0,0,0],[0,1,2,4,0,0],[0,5,1,8,2,0],[0,9,8,0,9,7],[0,0,5,9,8,6],[0,0,0,3,7,1]],"clues":{"1,0":{"A":7},"2,0":{"A":16},"3,0":{"A":17},"3,3":{"A":16,"D":12},"4,1":{"A":28},"5,2":{"A":11},"0,1":{"D":15},"0,2":{"D":16},"0,3":{"D":12},"1,4":{"D":26},"2,5":{"D":14}}}]},"8":{"1":[{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,0,0,9,1,3,0,0],[0,0,0,6,2,1,7,0],[0,0,0,8,4,0,3,1],[0,8,4,7,0,4,1,2],[0,9,1,0,9,3,0,0],[0,0,2,9,6,1,0,0],[0,0,0,8,3,2,0,0]],"clues":{"1,2":{"A":13},"2,2":{"A":16},"3,2":{"A":12,"D":7},"3,5":{"A":4,"D":10},"4,0":{"A":19},"4,4":{"A":7,"D":18},"5,0":{"A":10},"5,3":{"A":12,"D":17},"6,1":{"A":18},"7,2":{"A":13},"3,1":{"D":17},"0,3":{"D":30},"0,4":{"D":7},"0,5":{"D":4},"1,6":{"D":11},"2,7":{"D":3}}},{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,9,8,0,0,0,2,1],[0,7,9,0,0,8,9,6],[0,0,5,2,7,1,0,0],[0,0,0,1,9,3,0,0],[0,0,0,3,8,9,4,0],[0,1,4,8,0,0,1,3],[0,3,9,0,0,0,2,1]],"clues":{"1,0":{"A":17},"1,5":{"A":3,"D":21},"2,0":{"A":16},"2,4":{"A":23,"D":24},"3,1":{"A":15},"4,2":{"A":13},"5,2":{"A":24,"D":13},"6,0":{"A":13},"6,5":{"A":4},"7,0":{"A":12},"7,5":{"A":3},"0,1":{"D":16},"5,1":{"D":4},"0,2":{"D":22},"2,3":{"D":14},"0,6":{"D":11},"4,6":{"D":7},"0,7":{"D":7},"5,7":{"D":4}}}],"2":[{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,9,5,0,0,3,8,9],[0,7,9,0,7,1,2,8],[0,0,2,1,6,0,0,0],[0,0,4,7,8,9,3,0],[0,0,0,0,1,6,2,0],[0,9,8,7,3,0,1,3],[0,8,6,9,0,0,5,1]],"clues":{"1,0":{"A":14},"1,4":{"A":20,"D":25},"2,0":{"A":16},"2,3":{"A":18,"D":8},"3,1":{"A":9},"4,1":{"A":31},"5,3":{"A":9,"D":16},"6,0":{"A":27},"6,5":{"A":4},"7,0":{"A":23},"7,5":{"A":6},"0,1":{"D":16},"5,1":{"D":17},"0,2":{"D":20},"5,2":{"D":14},"0,5":{"D":4},"3,5":{"D":15},"0,6":{"D":10},"3,6":{"D":11},"0,7":{"D":17},"5,7":{"D":4}}},{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,0,0,6,2,0,0,0],[0,2,8,9,3,4,0,0],[0,3,4,8,0,1,9,0],[0,1,2,0,0,0,1,7],[0,0,1,2,0,8,2,9],[0,0,0,9,2,7,6,8],[0,0,0,0,7,9,0,0]],"clues":{"1,2":{"A":8,"D":15},"2,0":{"A":26},"3,0":{"A":15},"3,4":{"A":10},"4,0":{"A":3},"4,5":{"A":8,"D":24},"5,1":{"A":3},"5,4":{"A":19,"D":9},"6,2":{"A":32},"7,3":{"A":16},"1,1":{"D":6},"0,3":{"D":23},"4,3":{"D":11},"0,4":{"D":5},"1,5":{"D":5},"2,6":{"D":18},"3,7":{"D":24}}}],"3":[{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,0,0,0,9,2,0,0],[0,0,0,9,8,4,7,3],[0,6,1,3,2,0,9,7],[0,9,5,8,0,2,6,5],[0,8,3,0,8,3,4,9],[0,7,2,5,3,1,0,0],[0,0,0,8,9,0,0,0]],"clues":{"1,3":{"A":11,"D":20},"2,2":{"A":31,"D":11},"3,0":{"A":12},"3,5":{"A":16,"D":6},"4,0":{"A":22},"4,4":{"A":13,"D":20},"5,0":{"A":11},"5,3":{"A":24,"D":13},"6,0":{"A":18},"7,2":{"A":17},"2,1":{"D":30},"0,4":{"D":19},"0,5":{"D":6},"1,6":{"D":26},"1,7":{"D":24}}},{"size":8,"solution":[[0,0,0,0,0,0,0,0],[0,0,0,0,4,3,1,0],[0,0,0,4,8,9,7,3],[0,0,8,7,9,0,5,1],[0,1,3,0,0,0,3,2],[0,2,5,0,4,1,9,0],[0,4,1,5,7,9,0,0],[0,0,6,8,9,0,0,0]],"clues":{"1,3":{"A":8,"D":11},"2,2":{"A":31,"D":23},"3,1":{"A":24,"D":7},"3,5":{"A":6},"4,0":{"A":4},"4,5":{"A":5,"D":10},"5,0":{"A":7},"5,3":{"A":14,"D":13},"6,0":{"A":26},"7,1":{"A":23},"0,4":{"D":21},"4,4":{"D":20},"0,5":{"D":12},"0,6":{"D":25},"1,7":{"D":6}}}]},"10":{"1":[{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,0,0,3,1,0,0,0,8,9],[0,8,9,1,4,0,0,0,1,2],[0,1,6,0,2,3,0,7,9,0],[0,6,7,8,0,1,2,8,0,0],[0,2,8,1,7,0,1,9,8,5],[0,0,0,7,9,2,0,4,2,7],[0,0,8,9,0,1,2,0,9,8],[0,1,2,0,0,0,6,8,4,9],[0,8,9,0,0,0,7,9,0,0]],"clues":{"1,2":{"A":4,"D":30},"1,7":{"A":17},"2,0":{"A":22},"2,7":{"A":3,"D":28},"3,0":{"A":7},"3,3":{"A":5,"D":25},"3,6":{"A":16,"D":3},"4,0":{"A":21},"4,4":{"A":11,"D":16},"5,0":{"A":18},"5,5":{"A":23,"D":3},"6,2":{"A":18,"D":19},"6,6":{"A":13,"D":15},"7,1":{"A":17,"D":9},"7,4":{"A":3},"7,7":{"A":17,"D":17},"8,0":{"A":3},"8,5":{"A":27},"9,0":{"A":17},"9,5":{"A":16},"1,1":{"D":17},"0,3":{"D":4},"0,4":{"D":7},"2,5":{"D":4},"0,8":{"D":18},"4,8":{"D":23},"0,9":{"D":11},"4,9":{"D":29}}},{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,9,7,8,0,8,9,2,0,0],[0,7,2,9,0,7,2,1,6,0],[0,3,1,0,1,9,7,0,9,1],[0,8,3,9,4,0,0,9,8,6],[0,0,0,1,2,0,9,7,0,0],[0,8,9,6,0,0,1,8,9,5],[0,9,7,0,9,8,6,0,5,1],[0,0,8,2,7,1,0,1,8,3],[0,0,0,9,8,7,0,3,7,9]],"clues":{"1,0":{"A":24},"1,4":{"A":19},"2,0":{"A":18},"2,4":{"A":16,"D":7},"3,0":{"A":4},"3,3":{"A":17,"D":16},"3,7":{"A":10,"D":24},"4,0":{"A":24},"4,6":{"A":23,"D":16},"5,2":{"A":3,"D":24},"5,5":{"A":16},"6,0":{"A":23},"6,5":{"A":23,"D":16},"7,0":{"A":16},"7,3":{"A":23,"D":11},"7,7":{"A":6,"D":4},"8,1":{"A":18},"8,6":{"A":12},"9,2":{"A":24},"9,6":{"A":19},"0,1":{"D":27},"5,1":{"D":17},"0,2":{"D":13},"0,3":{"D":17},"6,4":{"D":24},"0,5":{"D":24},"0,6":{"D":18},"0,7":{"D":3},"1,8":{"D":23},"5,8":{"D":29},"2,9":{"D":7},"5,9":{"D":18}}}],"2":[{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,3,1,0,7,5,0,0,7,8],[0,8,5,1,6,9,0,0,3,4],[0,0,0,8,9,0,0,3,5,0],[0,5,8,0,3,7,5,8,4,0],[0,2,1,0,8,9,6,0,1,3],[0,0,4,9,2,8,1,0,2,7],[0,0,2,7,0,0,2,1,0,0],[0,4,5,0,0,7,4,3,6,9],[0,2,3,0,0,9,7,0,3,8]],"clues":{"1,0":{"A":4},"1,3":{"A":12,"D":9},"1,7":{"A":15},"2,0":{"A":29},"2,7":{"A":7,"D":11},"3,2":{"A":17,"D":23},"3,6":{"A":8,"D":25},"4,0":{"A":13},"4,3":{"A":27},"5,0":{"A":3},"5,3":{"A":23,"D":16},"5,7":{"A":4},"6,1":{"A":24},"6,7":{"A":9,"D":4},"7,1":{"A":9,"D":6},"7,5":{"A":3,"D":16},"8,0":{"A":9},"8,4":{"A":29},"9,0":{"A":5},"9,4":{"A":16},"9,7":{"A":11},"0,1":{"D":11},"3,1":{"D":7},"0,2":{"D":6},"0,4":{"D":35},"0,5":{"D":14},"3,5":{"D":24},"0,8":{"D":22},"7,8":{"D":9},"0,9":{"D":12},"4,9":{"D":10},"7,9":{"D":17}}},{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,2,1,0,0,8,9,0,7,5],[0,5,3,8,9,4,6,0,3,1],[0,0,0,3,1,0,1,7,6,0],[0,4,1,0,6,9,0,5,1,0],[0,9,5,0,2,5,1,0,9,7],[0,0,2,1,0,7,9,0,5,3],[0,0,6,3,9,0,8,7,0,0],[0,6,9,0,4,7,3,9,1,8],[0,1,7,0,8,9,0,0,7,9]],"clues":{"1,0":{"A":3},"1,4":{"A":17,"D":18},"1,7":{"A":12},"2,0":{"A":35},"2,7":{"A":4,"D":12},"3,2":{"A":4,"D":30},"3,5":{"A":14,"D":21},"4,0":{"A":5},"4,3":{"A":15},"4,6":{"A":6,"D":21},"5,0":{"A":14},"5,3":{"A":8,"D":4},"5,7":{"A":16},"6,1":{"A":3},"6,4":{"A":16,"D":21},"6,7":{"A":8,"D":16},"7,1":{"A":18,"D":7},"7,5":{"A":15,"D":16},"8,0":{"A":15},"8,3":{"A":32},"9,0":{"A":8},"9,3":{"A":17},"9,7":{"A":16},"0,1":{"D":7},"3,1":{"D":13},"0,2":{"D":4},"1,3":{"D":11},"0,5":{"D":12},"0,6":{"D":16},"0,8":{"D":31},"7,8":{"D":8},"0,9":{"D":6},"4,9":{"D":10},"7,9":{"D":17}}}],"3":[{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,9,2,0,1,8,0,0,3,8],[0,5,9,0,2,9,0,9,1,6],[0,0,5,2,7,0,4,2,0,0],[0,8,4,1,0,6,9,4,8,0],[0,1,3,0,4,3,8,0,2,4],[0,0,6,3,1,4,0,2,3,9],[0,0,0,7,2,0,3,8,1,0],[0,7,4,8,0,9,7,0,7,5],[0,9,8,0,0,4,2,0,4,1]],"clues":{"1,0":{"A":11},"1,3":{"A":9},"1,7":{"A":11,"D":15},"2,0":{"A":14},"2,3":{"A":11,"D":3},"2,6":{"A":16,"D":21},"3,1":{"A":14,"D":9},"3,5":{"A":6,"D":13},"4,0":{"A":13},"4,4":{"A":27,"D":7},"5,0":{"A":4},"5,3":{"A":15,"D":18},"5,7":{"A":6,"D":10},"6,1":{"A":14},"6,6":{"A":14,"D":12},"7,2":{"A":9,"D":12},"7,5":{"A":12,"D":13},"8,0":{"A":19},"8,4":{"A":16},"8,7":{"A":12},"9,0":{"A":17},"9,4":{"A":6},"9,7":{"A":5},"0,1":{"D":14},"7,1":{"D":16},"0,2":{"D":29},"0,4":{"D":10},"0,5":{"D":17},"0,8":{"D":4},"3,8":{"D":25},"0,9":{"D":14},"4,9":{"D":13},"7,9":{"D":6}}},{"size":10,"solution":[[0,0,0,0,0,0,0,0,0,0],[0,2,4,5,0,0,0,0,1,3],[0,4,9,1,8,0,4,3,5,7],[0,1,6,0,6,9,8,7,0,0],[0,0,0,1,4,3,0,4,8,1],[0,4,1,2,0,0,0,1,7,2],[0,5,7,3,0,7,3,2,0,0],[0,0,0,6,5,9,4,0,6,1],[0,3,4,5,1,0,1,3,5,2],[0,9,7,0,0,0,0,7,8,9]],"clues":{"1,0":{"A":11},"1,7":{"A":4,"D":17},"2,0":{"A":22},"2,5":{"A":19,"D":12},"3,0":{"A":7},"3,3":{"A":30,"D":17},"4,2":{"A":8,"D":8},"4,6":{"A":13},"5,0":{"A":7},"5,6":{"A":10,"D":8},"6,0":{"A":15},"6,4":{"A":12,"D":6},"7,2":{"A":24,"D":11},"7,7":{"A":7,"D":10},"8,0":{"A":13},"8,5":{"A":11},"9,0":{"A":16},"9,6":{"A":24},"0,1":{"D":7},"4,1":{"D":9},"7,1":{"D":12},"0,2":{"D":19},"0,3":{"D":6},"1,4":{"D":18},"5,5":{"D":16},"1,6":{"D":12},"0,8":{"D":6},"3,8":{"D":15},"6,8":{"D":19},"0,9":{"D":10},"3,9":{"D":3},"6,9":{"D":12}}}]}};
+const SIZES = [6, 8, 10];
+const LEVELS = [{k:'1', name:'簡單'}, {k:'2', name:'中等'}, {k:'3', name:'困難'}];
+const levelName = k => LEVELS.find(l => l.k === k).name;
+
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+const COMBOS = {};
+(function(){
+  for (let mask = 1; mask < 512; mask++){
+    const ds = []; for (let d = 1; d <= 9; d++) if (mask & (1 << (d-1))) ds.push(d);
+    const s = ds.reduce((a,b)=>a+b,0);
+    const key = ds.length + ',' + s;
+    (COMBOS[key] = COMBOS[key] || []).push(ds);
+  }
+  for (const k in COMBOS) COMBOS[k].sort((a,b)=>a.join('').localeCompare(b.join('')));
+})();
+
+const $ = id => document.getElementById(id);
+
+/* clue cell: isosceles "roof" triangles whose base sits against the run they total */
+function clueSVG(a, d){
+  // every roof is the same size: base on one cell edge, apex at the cell centre (a quarter of the cell)
+  const apex = 52, pos = 79, fs = 28;
+  let s = '<svg viewBox="0 0 100 100" aria-hidden="true">';
+  if (d) s += `<g class="tri d"><polygon points="5,97 95,97 50,${apex}"/><text x="50" y="${pos}" style="font-size:${fs}px">${d}</text></g>`;
+  if (a) s += `<g class="tri a"><polygon points="97,5 97,95 ${apex},50"/><text x="${pos}" y="50" style="font-size:${fs}px">${a}</text></g>`;
+  return s + '</svg>';
+}
+document.querySelectorAll('.mini .c').forEach(el => { el.innerHTML = clueSVG(el.dataset.a, el.dataset.d); });
+const boardEl = $('board');
+const statusEl = $('status');
+
+/* ---------- routing ---------- */
+const VIEWS = ['home','rules','select','game'];
+function show(name){
+  VIEWS.forEach(v => $('view-' + v).hidden = v !== name);
+  window.scrollTo(0, 0);
+}
+function route(){
+  const h = location.hash || '#/';
+  const m = h.match(/^#\/play\/(6|8|10)\/([123])\/([12])$/);
+  if (m){
+    if (timerId) { stopTimer(true); save(); }
+    show('game');
+    load(Number(m[1]), m[2], Number(m[3]) - 1);
+    document.title = `${$('game-title').textContent}｜數和練習場`;
+    return;
+  }
+  if (timerId) { stopTimer(true); save(); }
+  if (h === '#/rules'){ show('rules'); document.title = '規則說明｜數和練習場'; }
+  else if (h === '#/select'){ renderMatrix(); show('select'); document.title = '選擇題目｜數和練習場'; }
+  else { show('home'); document.title = '數和練習場'; }
+}
+window.addEventListener('hashchange', route);
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { location.hash = b.dataset.go; }));
+$('go-select').addEventListener('click', () => { location.hash = '#/select'; });
+$('go-rules').addEventListener('click', () => { location.hash = '#/rules'; });
+
+/* ---------- select page ---------- */
+function puzzleKey(size, level, no){ return `kakuro:${size}:${level}:${no}`; }
+function renderMatrix(){
+  const m = $('matrix');
+  m.innerHTML = '<div></div>' + LEVELS.map(l => `<div class="head">${l.name}</div>`).join('');
+  SIZES.forEach(s => {
+    m.insertAdjacentHTML('beforeend', `<div class="rowhead">${s}×${s}</div>`);
+    LEVELS.forEach(l => {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      [0,1].forEach(i => {
+        const saved = store.get(puzzleKey(s, l.k, i));
+        const b = document.createElement('button');
+        b.type = 'button';
+        let mark = '', cls = '', label = '';
+        if (saved && saved.solved){ cls = 'done'; mark = '✓ 完成'; label = '，已完成'; }
+        b.className = cls;
+        b.innerHTML = `第 ${i+1} 題${mark ? `<span class="mark">${mark}</span>` : ''}`;
+        b.setAttribute('aria-label', `${s}×${s} ${l.name} 第 ${i+1} 題${label}`);
+        b.addEventListener('click', () => { location.hash = `#/play/${s}/${l.k}/${i+1}`; });
+        slot.appendChild(b);
+      });
+      m.appendChild(slot);
+    });
+  });
+}
+
+/* ---------- game ---------- */
+let state = { size: 6, level: '1', no: 0 };
+let pz, N, entries, runs, cellRuns, sel = null, solved = false;
+let startTime = 0, elapsedBefore = 0, timerId = null;
+
+function key(){ return puzzleKey(state.size, state.level, state.no); }
+
+function computeRuns(){
+  runs = []; cellRuns = {};
+  const sol = pz.solution;
+  const white = (r,c) => r>=0 && c>=0 && r<N && c<N && sol[r][c] > 0;
+  for (const k in pz.clues){
+    const [r,c] = k.split(',').map(Number);
+    const cl = pz.clues[k];
+    if (cl.A){ const cells=[]; for (let x=c+1; white(r,x); x++) cells.push([r,x]); runs.push({dir:'A', head:[r,c], sum:cl.A, cells}); }
+    if (cl.D){ const cells=[]; for (let y=r+1; white(y,c); y++) cells.push([y,c]); runs.push({dir:'D', head:[r,c], sum:cl.D, cells}); }
+  }
+  runs.forEach((run,i) => run.cells.forEach(([r,c]) => {
+    const id = r+','+c; (cellRuns[id] = cellRuns[id] || {})[run.dir] = i;
+  }));
+}
+
+function load(size, level, no){
+  state = { size, level, no };
+  pz = PUZZLES[size][level][no];
+  N = pz.size;
+  $('game-title').textContent = `${size}×${size} ${levelName(level)} 第 ${no+1} 題`;
+  computeRuns();
+  const saved = store.get(key());
+  entries = saved && saved.entries ? saved.entries : Array.from({length:N}, () => Array(N).fill(0));
+  elapsedBefore = saved && saved.elapsed ? saved.elapsed : 0;
+  solved = !!(saved && saved.solved);
+  sel = null;
+  renderBoard();
+  setStatus(solved ? '這題你已經完成了！想重新挑戰可以按「全部清除」。' : '', solved ? 'ok' : '');
+  renderHelper();
+  startTimer();
+}
+
+function renderBoard(){
+  boardEl.style.setProperty('--n', N);
+  boardEl.innerHTML = '';
+  for (let r=0; r<N; r++) for (let c=0; c<N; c++){
+    let el;
+    if (pz.solution[r][c] > 0){
+      el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'cell white';
+      el.addEventListener('click', () => select(r,c));
+    } else {
+      el = document.createElement('div');
+      const cl = pz.clues[r+','+c];
+      if (cl){
+        el.className = 'cell clue';
+        el.innerHTML = clueSVG(cl.A, cl.D);
+        const parts = [];
+        if (cl.A) parts.push(`往右的和 ${cl.A}`);
+        if (cl.D) parts.push(`往下的和 ${cl.D}`);
+        el.setAttribute('aria-label', parts.join('，'));
+      } else el.className = 'cell block';
+    }
+    el.dataset.r = r; el.dataset.c = c;
+    boardEl.appendChild(el);
+  }
+  paint();
+}
+
+function cellEl(r,c){ return boardEl.children[r*N + c]; }
+
+function paint(){
+  const dupSet = new Set();
+  runs.forEach(run => {
+    const seen = {};
+    run.cells.forEach(([r,c]) => { const v = entries[r][c]; if (v){ (seen[v] = seen[v] || []).push(r+','+c); } });
+    for (const v in seen) if (seen[v].length > 1) seen[v].forEach(id => dupSet.add(id));
+  });
+  const inRun = new Set(); const litHeads = {};
+  if (sel){
+    const cr = cellRuns[sel[0]+','+sel[1]] || {};
+    ['A','D'].forEach(d => { if (cr[d] !== undefined){ const run = runs[cr[d]]; run.cells.forEach(([r,c]) => inRun.add(r+','+c)); litHeads[run.head.join(',')+d] = true; } });
+  }
+  for (let r=0; r<N; r++) for (let c=0; c<N; c++){
+    const el = cellEl(r,c); const id = r+','+c;
+    if (el.classList.contains('white')){
+      const v = entries[r][c];
+      el.textContent = v ? v : '';
+      el.classList.toggle('sel', !!sel && sel[0]===r && sel[1]===c);
+      el.classList.toggle('inrun', inRun.has(id));
+      el.classList.toggle('dup', dupSet.has(id));
+      el.setAttribute('aria-label', `第 ${r} 列第 ${c} 欄，${v ? '填了 ' + v : '空白'}`);
+    } else if (el.classList.contains('clue')){
+      const a = el.querySelector('.tri.a'), d = el.querySelector('.tri.d');
+      if (a) a.classList.toggle('on', !!litHeads[id+'A']);
+      if (d) d.classList.toggle('on', !!litHeads[id+'D']);
+      el.classList.toggle('lit', !!(litHeads[id+'A'] || litHeads[id+'D']));
+    }
+  }
+}
+
+
+function select(r,c){
+  sel = [r,c];
+  paint(); renderHelper();
+  cellEl(r,c).focus({preventScroll:true});
+}
+
+function put(v){
+  if (!sel) return;
+  const [r,c] = sel;
+  entries[r][c] = v;
+  paint(); save();
+  if (!solved && isComplete() && isCorrect()) win();
+}
+
+function isComplete(){ for (let r=0;r<N;r++) for (let c=0;c<N;c++) if (pz.solution[r][c] && !entries[r][c]) return false; return true; }
+function isCorrect(){ for (let r=0;r<N;r++) for (let c=0;c<N;c++) if (pz.solution[r][c] && entries[r][c] !== pz.solution[r][c]) return false; return true; }
+
+function setStatus(t, cls){ statusEl.textContent = t; statusEl.className = 'status' + (cls ? ' ' + cls : ''); }
+
+function win(){
+  solved = true; stopTimer(); save();
+  setStatus(`完成了！用時 ${fmt(elapsed())}。`, 'ok');
+}
+
+function elapsed(){ return elapsedBefore + (timerId ? Math.floor((Date.now() - startTime)/1000) : 0); }
+function fmt(s){ const m = Math.floor(s/60), ss = s%60; return `${m}:${String(ss).padStart(2,'0')}`; }
+function tick(){ $('timer').firstChild.nodeValue = fmt(elapsed()); }
+function startTimer(){
+  stopTimer(true);
+  if (!solved){ startTime = Date.now(); timerId = setInterval(tick, 1000); }
+  tick();
+}
+function stopTimer(silent){
+  if (timerId){ elapsedBefore = elapsed(); clearInterval(timerId); timerId = null; }
+  if (!silent) tick();
+}
+function save(){ if (pz) store.set(key(), {entries, elapsed: elapsed(), solved}); }
+setInterval(() => { if (timerId) save(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (document.hidden && timerId) save(); });
+
+function renderHelper(){
+  const h = $('helper');
+  if (!sel){
+    h.innerHTML = '<h2>組合提示</h2><p>點一個白格，這裡會列出它所在的橫段和直段可以用哪些數字組成。</p>';
+    return;
+  }
+  const cr = cellRuns[sel[0]+','+sel[1]] || {};
+  let html = '<h2>組合提示</h2>';
+  [['A','橫段'],['D','直段']].forEach(([d,name]) => {
+    if (cr[d] === undefined) return;
+    const run = runs[cr[d]];
+    const list = COMBOS[run.cells.length + ',' + run.sum] || [];
+    html += `<p class="runline">${name}：<b>${run.cells.length} 格，和為 ${run.sum}</b>，共 ${list.length} 種組合</p><div class="combos">`;
+    html += list.map(ds => `<span class="${list.length===1?'only':''}">${ds.join('+')}</span>`).join('');
+    html += '</div>';
+  });
+  h.innerHTML = html;
+}
+
+function ask(text){
+  return new Promise(res => {
+    const d = $('confirm'); $('confirm-text').textContent = text;
+    const yes = $('confirm-yes'), no = $('confirm-no');
+    const done = v => { yes.onclick = no.onclick = null; d.onclose = null; if (d.open) d.close(); res(v); };
+    yes.onclick = () => done(true); no.onclick = () => done(false);
+    d.onclose = () => done(false);
+    d.showModal();
+  });
+}
+
+function buildPad(){
+  const pad = $('pad');
+  for (let d=1; d<=9; d++){
+    const b = document.createElement('button'); b.type='button'; b.textContent = d;
+    b.addEventListener('click', () => { put(d); if (sel) cellEl(sel[0],sel[1]).focus({preventScroll:true}); });
+    pad.appendChild(b);
+  }
+  const e = document.createElement('button'); e.type='button'; e.className='erase'; e.textContent='擦掉';
+  e.addEventListener('click', () => { put(0); if (sel) cellEl(sel[0],sel[1]).focus({preventScroll:true}); });
+  pad.appendChild(e);
+}
+
+function move(dr, dc){
+  if (!sel) return;
+  let [r,c] = sel;
+  for (let i=0; i<N; i++){
+    r += dr; c += dc;
+    if (r<0||c<0||r>=N||c>=N) return;
+    if (pz.solution[r][c]) return select(r,c);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if ($('view-game').hidden || $('confirm').open || !sel) return;
+  if (/^[1-9]$/.test(e.key)){ put(Number(e.key)); e.preventDefault(); }
+  else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0'){ put(0); e.preventDefault(); }
+  else if (e.key === 'ArrowUp'){ move(-1,0); e.preventDefault(); }
+  else if (e.key === 'ArrowDown'){ move(1,0); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft'){ move(0,-1); e.preventDefault(); }
+  else if (e.key === 'ArrowRight'){ move(0,1); e.preventDefault(); }
+});
+
+$('btn-clear').addEventListener('click', async () => {
+  if (!(await ask('要清除這題所有填過的數字並重新計時嗎？'))) return;
+  entries = Array.from({length:N}, () => Array(N).fill(0));
+  solved = false; elapsedBefore = 0;
+  setStatus(''); paint(); startTimer(); save();
+});
+$('btn-next').addEventListener('click', () => {
+  const order = [];
+  SIZES.forEach(s => LEVELS.forEach(l => [1,2].forEach(i => order.push([s,l.k,i]))));
+  const idx = order.findIndex(o => o[0]===state.size && o[1]===state.level && o[2]===state.no+1);
+  const nx = order[(idx+1) % order.length];
+  location.hash = `#/play/${nx[0]}/${nx[1]}/${nx[2]}`;
+});
+
+buildPad();
+route();
+</script>
+</body>
+</html>
